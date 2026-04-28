@@ -71,7 +71,6 @@ resource "azurerm_linux_web_app" "frontend" {
     "WEBSITES_PORT"                       = "3000"
     "PORT"                                = "3000"
     "NODE_ENV"                            = "production"
-    "WEBSITE_VNET_ROUTE_ALL"              = "1"
 
     # Backend API URLs (private DNS — resolved via VNet integration)
     # Function keys must be added manually after deployment:

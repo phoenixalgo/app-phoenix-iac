@@ -1,0 +1,11 @@
+# Copy to staging.tfvars and fill in values
+subscription_id = "YOUR_SUBSCRIPTION_ID"
+environment     = "staging"
+location        = "australiaeast"
+project         = "phoenix"
+
+function_app_plan_sku = "P1v2"
+frontend_app_plan_sku = "B1"
+
+# auth0_domain    = "yourapp.au.auth0.com"
+# auth0_client_id = ""

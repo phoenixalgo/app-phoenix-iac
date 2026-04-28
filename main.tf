@@ -4,6 +4,7 @@
 resource "azurerm_resource_group" "main" {
   name     = "rg-${var.project}-${var.environment}"
   location = var.location
+  tags     = local.default_tags
 }
 
 ###############################################################################
@@ -88,6 +89,7 @@ resource "azurerm_service_plan" "functions" {
   resource_group_name = azurerm_resource_group.main.name
   os_type             = "Linux"
   sku_name            = var.function_app_plan_sku
+  tags                = local.default_tags
 }
 
 ###############################################################################

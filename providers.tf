@@ -16,14 +16,15 @@ provider "azurerm" {
     }
   }
 
-  subscription_id = var.subscription_id
+  subscription_id                = var.subscription_id
+  resource_provider_registrations = "none"
+}
 
-  default_tags {
-    tags = {
-      environment = var.environment
-      project     = var.project
-      managed-by  = "terraform"
-      repository  = "phoenixapp_iac"
-    }
+locals {
+  default_tags = {
+    environment = var.environment
+    project     = var.project
+    managed-by  = "terraform"
+    repository  = "phoenixapp_iac"
   }
 }

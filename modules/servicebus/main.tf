@@ -7,7 +7,7 @@ resource "azurerm_servicebus_namespace" "main" {
   location                      = var.location
   resource_group_name           = var.resource_group_name
   sku                           = "Standard"
-  public_network_access_enabled = false
+  public_network_access_enabled = true # Standard SKU doesn't support private endpoints
   minimum_tls_version           = "1.2"
 }
 
@@ -101,23 +101,6 @@ resource "azurerm_servicebus_topic" "topics" {
 }
 
 ###############################################################################
-# Private Endpoint
+# Private Endpoints are not supported on Standard Service Bus namespaces.
+# Keep public network access enabled and secure access with SAS/RBAC instead.
 ###############################################################################
-resource "azurerm_private_endpoint" "servicebus" {
-  name                = "pe-${var.project}-sb-${var.environment}"
-  location            = var.location
-  resource_group_name = var.resource_group_name
-  subnet_id           = var.subnet_pe_id
-
-  private_service_connection {
-    name                           = "psc-servicebus"
-    private_connection_resource_id = azurerm_servicebus_namespace.main.id
-    subresource_names              = ["namespace"]
-    is_manual_connection           = false
-  }
-
-  private_dns_zone_group {
-    name                 = "sb-dns"
-    private_dns_zone_ids = [var.private_dns_zone_servicebus_id]
-  }
-}

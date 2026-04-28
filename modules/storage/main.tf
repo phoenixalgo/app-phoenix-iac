@@ -24,7 +24,7 @@ resource "azurerm_storage_account" "data" {
   account_tier                    = "Standard"
   account_replication_type        = "LRS"
   min_tls_version                 = "TLS1_2"
-  public_network_access_enabled   = false
+  public_network_access_enabled   = true # Required for Terraform to create tables/containers from outside VNet
   allow_nested_items_to_be_public = false
 }
 
