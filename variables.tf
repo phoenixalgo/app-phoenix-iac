@@ -37,9 +37,9 @@ variable "vnet_address_space" {
 # Compute SKUs
 ###############################################################################
 variable "function_app_plan_sku" {
-  description = "App Service Plan SKU for Function Apps (needs P1v2+ for private endpoints)"
+  description = "Service Plan SKU for Function Apps (FC1 = Flex Consumption — required for the function_app module)"
   type        = string
-  default     = "P1v2"
+  default     = "FC1"
 }
 
 variable "frontend_app_plan_sku" {
@@ -63,16 +63,4 @@ variable "auth0_client_id" {
   default     = ""
 }
 
-variable "auth0_client_secret" {
-  description = "Auth0 application client secret"
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "auth0_secret" {
-  description = "Random string used to encrypt Auth0 session cookies"
-  type        = string
-  sensitive   = true
-  default     = ""
-}
+# auth0_client_secret and auth0_secret are managed directly in Key Vault — no Terraform variable.

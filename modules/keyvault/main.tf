@@ -1,6 +1,7 @@
 ###############################################################################
 # Key Vault
-# Dev uses: HyblockKeyVault
+# Secret values are managed manually outside Terraform — IaC only manages
+# the vault, the deployer's role assignment, and the private endpoint.
 ###############################################################################
 data "azurerm_client_config" "current" {}
 
@@ -12,8 +13,8 @@ resource "azurerm_key_vault" "main" {
   sku_name                      = "standard"
   soft_delete_retention_days    = 7
   purge_protection_enabled      = false
-  public_network_access_enabled = true # Required for Terraform to seed secrets from outside VNet
-  enable_rbac_authorization     = true
+  public_network_access_enabled = true # Required for the deployer to manage secrets from outside the VNet
+  rbac_authorization_enabled    = true
 }
 
 ###############################################################################
@@ -26,99 +27,57 @@ resource "azurerm_role_assignment" "deployer_kv_admin" {
 }
 
 ###############################################################################
-# Seed secrets — mirrors the Key Vault secret names from dev (HyblockKeyVault)
-# Actual secret values should be updated manually or via CI after first apply.
+# Removed blocks — keep existing KV secrets in place but stop managing them.
+# Run `terraform apply` to drop them from state without destroying the values.
 ###############################################################################
-resource "azurerm_key_vault_secret" "datacollector_storage" {
-  name         = "hyblock-datacollector-storage-connection-string"
-  value        = var.data_storage_connection_string
-  key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_role_assignment.deployer_kv_admin]
+removed {
+  from = azurerm_key_vault_secret.datacollector_storage
+  lifecycle { destroy = false }
 }
 
-resource "azurerm_key_vault_secret" "masterdata_storage" {
-  name         = "hyblock-masterdata-connection-string"
-  value        = var.data_storage_connection_string
-  key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_role_assignment.deployer_kv_admin]
+removed {
+  from = azurerm_key_vault_secret.masterdata_storage
+  lifecycle { destroy = false }
 }
 
-resource "azurerm_key_vault_secret" "reporting_storage" {
-  name         = "hyblock-reporting-storage-connection-string"
-  value        = var.data_storage_connection_string
-  key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_role_assignment.deployer_kv_admin]
+removed {
+  from = azurerm_key_vault_secret.reporting_storage
+  lifecycle { destroy = false }
 }
 
-resource "azurerm_key_vault_secret" "servicebus" {
-  name         = "hyblock-servicebus-connection-string"
-  value        = var.servicebus_connection_string
-  key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_role_assignment.deployer_kv_admin]
+removed {
+  from = azurerm_key_vault_secret.servicebus
+  lifecycle { destroy = false }
 }
 
-resource "azurerm_key_vault_secret" "angelone_state_storage" {
-  name         = "angelone-state-storage-connection-string"
-  value        = var.data_storage_connection_string
-  key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_role_assignment.deployer_kv_admin]
+removed {
+  from = azurerm_key_vault_secret.angelone_state_storage
+  lifecycle { destroy = false }
 }
 
-###############################################################################
-# Auth0 secrets (used by frontend via @Microsoft.KeyVault references)
-###############################################################################
-resource "azurerm_key_vault_secret" "auth0_client_secret" {
-  name         = "auth0-client-secret"
-  value        = var.auth0_client_secret
-  key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_role_assignment.deployer_kv_admin]
-
-  lifecycle {
-    ignore_changes = [value]
-  }
+removed {
+  from = azurerm_key_vault_secret.alpacafe_storage
+  lifecycle { destroy = false }
 }
 
-resource "azurerm_key_vault_secret" "auth0_secret" {
-  name         = "auth0-secret"
-  value        = var.auth0_secret
-  key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_role_assignment.deployer_kv_admin]
-
-  lifecycle {
-    ignore_changes = [value]
-  }
+removed {
+  from = azurerm_key_vault_secret.auth0_client_secret
+  lifecycle { destroy = false }
 }
 
-# Placeholder secrets — must be updated with real values after apply
-locals {
-  placeholder_secrets = {
-    "ALPACA-API-KEY"                             = "REPLACE_ME"
-    "ALPACA-API-SECRET"                          = "REPLACE_ME"
-    "TELEGRAM-BOT-TOKEN"                         = "REPLACE_ME"
-    "OKX-TRADESIGNAL-ACCOUNT1-API-KEY"           = "REPLACE_ME"
-    "OKX-TRADESIGNAL-ACCOUNT1-API-SECRET"        = "REPLACE_ME"
-    "OKX-TRADESIGNAL-ACCOUNT1-PASSPHRASE"        = "REPLACE_ME"
-    "OKX-TRADESIGNAL-ACCOUNT2-API-KEY"           = "REPLACE_ME"
-    "OKX-TRADESIGNAL-ACCOUNT2-API-SECRET"        = "REPLACE_ME"
-    "OKX-TRADESIGNAL-ACCOUNT2-PASSPHRASE"        = "REPLACE_ME"
-    "ANGELONE-API-KEY"                           = "REPLACE_ME"
-    "ANGELONE-CLIENT-CODE"                       = "REPLACE_ME"
-    "ANGELONE-MPIN"                              = "REPLACE_ME"
-    "ANGELONE-TOTP-SECRET"                       = "REPLACE_ME"
-    "hyblock-alpacafe-storage-connection-string"  = "REPLACE_ME"
-  }
+removed {
+  from = azurerm_key_vault_secret.auth0_secret
+  lifecycle { destroy = false }
 }
 
-resource "azurerm_key_vault_secret" "placeholders" {
-  for_each     = local.placeholder_secrets
-  name         = each.key
-  value        = each.value
-  key_vault_id = azurerm_key_vault.main.id
-  depends_on   = [azurerm_role_assignment.deployer_kv_admin]
+removed {
+  from = azurerm_key_vault_secret.function_keys
+  lifecycle { destroy = false }
+}
 
-  lifecycle {
-    ignore_changes = [value]
-  }
+removed {
+  from = azurerm_key_vault_secret.placeholders
+  lifecycle { destroy = false }
 }
 
 ###############################################################################

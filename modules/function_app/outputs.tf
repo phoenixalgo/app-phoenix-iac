@@ -1,15 +1,15 @@
 output "function_app_id" {
-  value = azurerm_linux_function_app.this.id
+  value = azurerm_function_app_flex_consumption.this.id
 }
 
 output "function_app_name" {
-  value = azurerm_linux_function_app.this.name
+  value = azurerm_function_app_flex_consumption.this.name
 }
 
 output "default_hostname" {
-  value = azurerm_linux_function_app.this.default_hostname
+  value = azurerm_function_app_flex_consumption.this.default_hostname
 }
 
 output "principal_id" {
-  value = azurerm_linux_function_app.this.identity[0].principal_id
+  value = azurerm_function_app_flex_consumption.this.identity[0].principal_id
 }

@@ -1,5 +1,5 @@
 ###############################################################################
-# Storage Account — Function App runtime (AzureWebJobsStorage)
+# Storage Account — Function App runtime + Flex Consumption deployment packages
 ###############################################################################
 resource "azurerm_storage_account" "func_runtime" {
   name                            = "st${var.project}func${var.environment}"
@@ -11,6 +11,10 @@ resource "azurerm_storage_account" "func_runtime" {
   public_network_access_enabled   = true # Required for function app runtime
   allow_nested_items_to_be_public = false
 }
+
+# Note: deployment containers are per-function-app and live inside the
+# function_app module (modules/function_app/main.tf) — Flex Consumption
+# requires each app to have its own container.
 
 ###############################################################################
 # Storage Account — Data (tables + blobs)
@@ -83,6 +87,11 @@ resource "azurerm_storage_table" "okx_trade_schedules" {
 
 resource "azurerm_storage_table" "angelone_execution_state" {
   name                 = "AngelOneExecutionState"
+  storage_account_name = azurerm_storage_account.data.name
+}
+
+resource "azurerm_storage_table" "market_regime_score" {
+  name                 = "MarketRegimeScore"
   storage_account_name = azurerm_storage_account.data.name
 }
 

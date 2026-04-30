@@ -32,10 +32,12 @@ resource "azurerm_subnet" "functions" {
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [cidrsubnet(var.vnet_address_space, 8, 2)] # 10.0.2.0/24
 
+  # Flex Consumption requires Microsoft.App/environments delegation (it runs on
+  # the Azure Container Apps fleet, not the classic App Service workers).
   delegation {
     name = "functions-delegation"
     service_delegation {
-      name    = "Microsoft.Web/serverFarms"
+      name    = "Microsoft.App/environments"
       actions = ["Microsoft.Network/virtualNetworks/subnets/action"]
     }
   }

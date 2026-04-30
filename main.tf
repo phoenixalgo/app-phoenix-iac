@@ -50,21 +50,17 @@ module "servicebus" {
 }
 
 ###############################################################################
-# Phase 2C — Key Vault + Seeded Secrets
+# Phase 2C — Key Vault (no seeding — secret values managed manually)
 ###############################################################################
 module "keyvault" {
   source = "./modules/keyvault"
 
-  resource_group_name            = azurerm_resource_group.main.name
-  location                       = var.location
-  environment                    = var.environment
-  project                        = var.project
-  subnet_pe_id                   = module.networking.subnet_private_endpoints_id
-  private_dns_zone_vault_id      = module.networking.private_dns_zone_ids["vault"]
-  data_storage_connection_string = module.storage.data_connection_string
-  servicebus_connection_string   = module.servicebus.connection_string
-  auth0_client_secret            = var.auth0_client_secret
-  auth0_secret                   = var.auth0_secret
+  resource_group_name       = azurerm_resource_group.main.name
+  location                  = var.location
+  environment               = var.environment
+  project                   = var.project
+  subnet_pe_id              = module.networking.subnet_private_endpoints_id
+  private_dns_zone_vault_id = module.networking.private_dns_zone_ids["vault"]
 }
 
 ###############################################################################
@@ -80,17 +76,10 @@ module "acr" {
 }
 
 ###############################################################################
-# Phase 3 — Shared App Service Plan for all Function Apps
-# P1v2 required for private endpoints + VNet integration
+# Phase 3 — Function Apps (Flex Consumption)
+# Each function app gets its own FC1 plan (Flex Consumption is 1 plan : 1 app).
+# The plan is created inside the function_app module — see modules/function_app.
 ###############################################################################
-resource "azurerm_service_plan" "functions" {
-  name                = "asp-${var.project}-functions-${var.environment}"
-  location            = var.location
-  resource_group_name = azurerm_resource_group.main.name
-  os_type             = "Linux"
-  sku_name            = var.function_app_plan_sku
-  tags                = local.default_tags
-}
 
 ###############################################################################
 # Phase 3A — AlpacaDataManager
@@ -104,15 +93,15 @@ module "func_alpacadatamanager" {
   location                     = var.location
   environment                  = var.environment
   function_app_name            = "alpacadm"
-  app_service_plan_id          = azurerm_service_plan.functions.id
-  storage_account_name         = module.storage.func_runtime_account_name
-  func_storage_account_id      = module.storage.func_runtime_account_id
-  data_storage_account_id      = module.storage.data_account_id
-  subnet_functions_id          = module.networking.subnet_functions_id
-  subnet_pe_id                 = module.networking.subnet_private_endpoints_id
-  private_dns_zone_websites_id = module.networking.private_dns_zone_ids["websites"]
-  key_vault_id                 = module.keyvault.vault_id
-  key_vault_uri                = module.keyvault.vault_uri
+  app_service_plan_sku             = var.function_app_plan_sku
+  deployment_storage_account_id    = module.storage.func_runtime_account_id
+  deployment_storage_blob_endpoint = module.storage.func_runtime_blob_endpoint
+  data_storage_account_id          = module.storage.data_account_id
+  subnet_functions_id              = module.networking.subnet_functions_id
+  subnet_pe_id                     = module.networking.subnet_private_endpoints_id
+  private_dns_zone_websites_id     = module.networking.private_dns_zone_ids["websites"]
+  key_vault_id                     = module.keyvault.vault_id
+  key_vault_uri                    = module.keyvault.vault_uri
 
   extra_app_settings = {
     "AZURE_SERVICEBUS_CONNECTION_STRING" = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/hyblock-servicebus-connection-string)"
@@ -136,15 +125,15 @@ module "func_portfoliomanager" {
   location                     = var.location
   environment                  = var.environment
   function_app_name            = "portfoliomgr"
-  app_service_plan_id          = azurerm_service_plan.functions.id
-  storage_account_name         = module.storage.func_runtime_account_name
-  func_storage_account_id      = module.storage.func_runtime_account_id
-  data_storage_account_id      = module.storage.data_account_id
-  subnet_functions_id          = module.networking.subnet_functions_id
-  subnet_pe_id                 = module.networking.subnet_private_endpoints_id
-  private_dns_zone_websites_id = module.networking.private_dns_zone_ids["websites"]
-  key_vault_id                 = module.keyvault.vault_id
-  key_vault_uri                = module.keyvault.vault_uri
+  app_service_plan_sku             = var.function_app_plan_sku
+  deployment_storage_account_id    = module.storage.func_runtime_account_id
+  deployment_storage_blob_endpoint = module.storage.func_runtime_blob_endpoint
+  data_storage_account_id          = module.storage.data_account_id
+  subnet_functions_id              = module.networking.subnet_functions_id
+  subnet_pe_id                     = module.networking.subnet_private_endpoints_id
+  private_dns_zone_websites_id     = module.networking.private_dns_zone_ids["websites"]
+  key_vault_id                     = module.keyvault.vault_id
+  key_vault_uri                    = module.keyvault.vault_uri
 
   extra_app_settings = {
     "AZURE_SERVICEBUS_CONNECTION_STRING" = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/hyblock-servicebus-connection-string)"
@@ -166,15 +155,15 @@ module "func_okxmanager" {
   location                     = var.location
   environment                  = var.environment
   function_app_name            = "okxmgr"
-  app_service_plan_id          = azurerm_service_plan.functions.id
-  storage_account_name         = module.storage.func_runtime_account_name
-  func_storage_account_id      = module.storage.func_runtime_account_id
-  data_storage_account_id      = module.storage.data_account_id
-  subnet_functions_id          = module.networking.subnet_functions_id
-  subnet_pe_id                 = module.networking.subnet_private_endpoints_id
-  private_dns_zone_websites_id = module.networking.private_dns_zone_ids["websites"]
-  key_vault_id                 = module.keyvault.vault_id
-  key_vault_uri                = module.keyvault.vault_uri
+  app_service_plan_sku             = var.function_app_plan_sku
+  deployment_storage_account_id    = module.storage.func_runtime_account_id
+  deployment_storage_blob_endpoint = module.storage.func_runtime_blob_endpoint
+  data_storage_account_id          = module.storage.data_account_id
+  subnet_functions_id              = module.networking.subnet_functions_id
+  subnet_pe_id                     = module.networking.subnet_private_endpoints_id
+  private_dns_zone_websites_id     = module.networking.private_dns_zone_ids["websites"]
+  key_vault_id                     = module.keyvault.vault_id
+  key_vault_uri                    = module.keyvault.vault_uri
 
   extra_app_settings = {
     "AZURE_SERVICEBUS_CONNECTION_STRING" = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/hyblock-servicebus-connection-string)"
@@ -202,15 +191,15 @@ module "func_hyperliquidmanager" {
   location                     = var.location
   environment                  = var.environment
   function_app_name            = "hlmgr"
-  app_service_plan_id          = azurerm_service_plan.functions.id
-  storage_account_name         = module.storage.func_runtime_account_name
-  func_storage_account_id      = module.storage.func_runtime_account_id
-  data_storage_account_id      = module.storage.data_account_id
-  subnet_functions_id          = module.networking.subnet_functions_id
-  subnet_pe_id                 = module.networking.subnet_private_endpoints_id
-  private_dns_zone_websites_id = module.networking.private_dns_zone_ids["websites"]
-  key_vault_id                 = module.keyvault.vault_id
-  key_vault_uri                = module.keyvault.vault_uri
+  app_service_plan_sku             = var.function_app_plan_sku
+  deployment_storage_account_id    = module.storage.func_runtime_account_id
+  deployment_storage_blob_endpoint = module.storage.func_runtime_blob_endpoint
+  data_storage_account_id          = module.storage.data_account_id
+  subnet_functions_id              = module.networking.subnet_functions_id
+  subnet_pe_id                     = module.networking.subnet_private_endpoints_id
+  private_dns_zone_websites_id     = module.networking.private_dns_zone_ids["websites"]
+  key_vault_id                     = module.keyvault.vault_id
+  key_vault_uri                    = module.keyvault.vault_uri
 
   extra_app_settings = {
     "AZURE_SERVICEBUS_CONNECTION_STRING" = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/hyblock-servicebus-connection-string)"
@@ -231,15 +220,15 @@ module "func_angelonemanager" {
   location                     = var.location
   environment                  = var.environment
   function_app_name            = "angelonemgr"
-  app_service_plan_id          = azurerm_service_plan.functions.id
-  storage_account_name         = module.storage.func_runtime_account_name
-  func_storage_account_id      = module.storage.func_runtime_account_id
-  data_storage_account_id      = module.storage.data_account_id
-  subnet_functions_id          = module.networking.subnet_functions_id
-  subnet_pe_id                 = module.networking.subnet_private_endpoints_id
-  private_dns_zone_websites_id = module.networking.private_dns_zone_ids["websites"]
-  key_vault_id                 = module.keyvault.vault_id
-  key_vault_uri                = module.keyvault.vault_uri
+  app_service_plan_sku             = var.function_app_plan_sku
+  deployment_storage_account_id    = module.storage.func_runtime_account_id
+  deployment_storage_blob_endpoint = module.storage.func_runtime_blob_endpoint
+  data_storage_account_id          = module.storage.data_account_id
+  subnet_functions_id              = module.networking.subnet_functions_id
+  subnet_pe_id                     = module.networking.subnet_private_endpoints_id
+  private_dns_zone_websites_id     = module.networking.private_dns_zone_ids["websites"]
+  key_vault_id                     = module.keyvault.vault_id
+  key_vault_uri                    = module.keyvault.vault_uri
 
   extra_app_settings = {
     "AZURE_SERVICEBUS_CONNECTION_STRING"    = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/hyblock-servicebus-connection-string)"

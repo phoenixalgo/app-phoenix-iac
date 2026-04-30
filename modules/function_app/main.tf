@@ -1,7 +1,7 @@
 ###############################################################################
-# Reusable module — one instance per function app
+# Reusable module — one Flex Consumption function app per call.
 # Creates: Function App, System Identity, VNet integration, Private Endpoint,
-#          RBAC role assignments (Key Vault, Storage)
+#          RBAC role assignments (Key Vault, deployment storage, data storage).
 ###############################################################################
 
 locals {
@@ -9,19 +9,49 @@ locals {
 }
 
 ###############################################################################
-# Linux Function App — uses managed identity for storage (no access keys)
+# Per-function App Service Plan (Flex Consumption requires 1:1 plan-to-app)
 ###############################################################################
-resource "azurerm_linux_function_app" "this" {
+resource "azurerm_service_plan" "this" {
+  name                = "asp-${var.function_app_name}-${var.environment}"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  os_type             = "Linux"
+  sku_name            = var.app_service_plan_sku
+}
+
+###############################################################################
+# Per-function deployment container
+# Each Flex Consumption app needs its OWN container — sharing one across
+# multiple apps causes the last `func azure functionapp publish` to overwrite
+# the package every app reads from.
+###############################################################################
+resource "azurerm_storage_container" "deployment" {
+  name                  = "deploy-${var.function_app_name}"
+  storage_account_id    = var.deployment_storage_account_id
+  container_access_type = "private"
+}
+
+###############################################################################
+# Linux Function App (Flex Consumption)
+# Uses managed identity for deployment storage access — no connection strings.
+###############################################################################
+resource "azurerm_function_app_flex_consumption" "this" {
   name                = local.full_name
   resource_group_name = var.resource_group_name
   location            = var.location
-  service_plan_id     = var.app_service_plan_id
+  service_plan_id     = azurerm_service_plan.this.id
 
-  storage_account_name          = var.storage_account_name
-  storage_uses_managed_identity = true
+  storage_container_type      = "blobContainer"
+  storage_container_endpoint  = "${var.deployment_storage_blob_endpoint}${azurerm_storage_container.deployment.name}"
+  storage_authentication_type = "SystemAssignedIdentity"
 
-  virtual_network_subnet_id = var.subnet_functions_id
+  runtime_name    = "python"
+  runtime_version = var.python_version
 
+  instance_memory_in_mb  = var.instance_memory_in_mb
+  maximum_instance_count = var.maximum_instance_count
+
+  virtual_network_subnet_id     = var.subnet_functions_id
   public_network_access_enabled = false
   https_only                    = true
 
@@ -30,20 +60,15 @@ resource "azurerm_linux_function_app" "this" {
   }
 
   site_config {
-    application_stack {
-      python_version = var.python_version
-    }
-    vnet_route_all_enabled = true
-    ftps_state             = "Disabled"
-    minimum_tls_version    = "1.2"
+    minimum_tls_version = "1.2"
   }
 
+  # Flex Consumption manages FUNCTIONS_WORKER_RUNTIME, FUNCTIONS_EXTENSION_VERSION,
+  # AzureWebJobsStorage, and SCM_DO_BUILD_DURING_DEPLOYMENT itself — they cannot
+  # appear in app_settings or the create call returns 400.
   app_settings = merge(
     {
-      "FUNCTIONS_WORKER_RUNTIME"       = "python"
-      "WEBSITE_VNET_ROUTE_ALL"         = "1"
-      "KEY_VAULT_URL"                  = var.key_vault_uri
-      "SCM_DO_BUILD_DURING_DEPLOYMENT" = "true"
+      "KEY_VAULT_URL" = var.key_vault_uri
     },
     var.extra_app_settings,
   )
@@ -55,34 +80,35 @@ resource "azurerm_linux_function_app" "this" {
 resource "azurerm_role_assignment" "kv_secrets_user" {
   scope                = var.key_vault_id
   role_definition_name = "Key Vault Secrets User"
-  principal_id         = azurerm_linux_function_app.this.identity[0].principal_id
+  principal_id         = azurerm_function_app_flex_consumption.this.identity[0].principal_id
 }
 
 ###############################################################################
-# RBAC — func runtime storage (AzureWebJobsStorage needs these roles)
+# RBAC — deployment + runtime storage account
+# Flex Consumption uses one storage account for both:
+#   - deployment package (blob)             → Storage Blob Data Owner
+#   - host system keys, locks, leases       → Storage Blob Data Owner (already)
+#   - queue triggers internal state         → Storage Queue Data Contributor
+#   - table-based bookkeeping               → Storage Table Data Contributor
+# Without queue/table access the host fails to load system keys with a
+# generic InternalServerError.
 ###############################################################################
-resource "azurerm_role_assignment" "storage_blob_owner" {
-  scope                = var.func_storage_account_id
+resource "azurerm_role_assignment" "deployment_storage_owner" {
+  scope                = var.deployment_storage_account_id
   role_definition_name = "Storage Blob Data Owner"
-  principal_id         = azurerm_linux_function_app.this.identity[0].principal_id
+  principal_id         = azurerm_function_app_flex_consumption.this.identity[0].principal_id
 }
 
-resource "azurerm_role_assignment" "storage_queue_contributor" {
-  scope                = var.func_storage_account_id
+resource "azurerm_role_assignment" "deployment_storage_queue" {
+  scope                = var.deployment_storage_account_id
   role_definition_name = "Storage Queue Data Contributor"
-  principal_id         = azurerm_linux_function_app.this.identity[0].principal_id
+  principal_id         = azurerm_function_app_flex_consumption.this.identity[0].principal_id
 }
 
-resource "azurerm_role_assignment" "storage_table_contributor" {
-  scope                = var.func_storage_account_id
+resource "azurerm_role_assignment" "deployment_storage_table" {
+  scope                = var.deployment_storage_account_id
   role_definition_name = "Storage Table Data Contributor"
-  principal_id         = azurerm_linux_function_app.this.identity[0].principal_id
-}
-
-resource "azurerm_role_assignment" "storage_account_contributor" {
-  scope                = var.func_storage_account_id
-  role_definition_name = "Storage Account Contributor"
-  principal_id         = azurerm_linux_function_app.this.identity[0].principal_id
+  principal_id         = azurerm_function_app_flex_consumption.this.identity[0].principal_id
 }
 
 ###############################################################################
@@ -91,17 +117,17 @@ resource "azurerm_role_assignment" "storage_account_contributor" {
 resource "azurerm_role_assignment" "data_blob_contributor" {
   scope                = var.data_storage_account_id
   role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = azurerm_linux_function_app.this.identity[0].principal_id
+  principal_id         = azurerm_function_app_flex_consumption.this.identity[0].principal_id
 }
 
 resource "azurerm_role_assignment" "data_table_contributor" {
   scope                = var.data_storage_account_id
   role_definition_name = "Storage Table Data Contributor"
-  principal_id         = azurerm_linux_function_app.this.identity[0].principal_id
+  principal_id         = azurerm_function_app_flex_consumption.this.identity[0].principal_id
 }
 
 ###############################################################################
-# Private Endpoint (inbound — so only VNet resources can call this function)
+# Private Endpoint (inbound — VNet-only access)
 ###############################################################################
 resource "azurerm_private_endpoint" "function" {
   name                = "pe-${local.full_name}"
@@ -111,7 +137,7 @@ resource "azurerm_private_endpoint" "function" {
 
   private_service_connection {
     name                           = "psc-${var.function_app_name}"
-    private_connection_resource_id = azurerm_linux_function_app.this.id
+    private_connection_resource_id = azurerm_function_app_flex_consumption.this.id
     subresource_names              = ["sites"]
     is_manual_connection           = false
   }

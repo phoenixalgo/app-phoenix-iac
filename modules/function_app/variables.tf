@@ -7,18 +7,19 @@ variable "function_app_name" {
   type        = string
 }
 
-variable "app_service_plan_id" {
-  description = "ID of the shared App Service Plan"
+variable "app_service_plan_sku" {
+  description = "Service Plan SKU (FC1 = Flex Consumption — required by this module)"
+  type        = string
+  default     = "FC1"
+}
+
+variable "deployment_storage_account_id" {
+  description = "Resource ID of the storage account hosting the deployment container (for RBAC role assignment)"
   type        = string
 }
 
-variable "storage_account_name" {
-  description = "Storage account for AzureWebJobsStorage"
-  type        = string
-}
-
-variable "func_storage_account_id" {
-  description = "Resource ID of the func runtime storage account (for RBAC)"
+variable "deployment_storage_blob_endpoint" {
+  description = "Primary blob endpoint URL of the deployment storage account (e.g. https://<acct>.blob.core.windows.net/)"
   type        = string
 }
 
@@ -56,6 +57,18 @@ variable "python_version" {
   description = "Python runtime version"
   type        = string
   default     = "3.11"
+}
+
+variable "instance_memory_in_mb" {
+  description = "Memory per instance in MB (Flex Consumption: 512, 2048, or 4096)"
+  type        = number
+  default     = 2048
+}
+
+variable "maximum_instance_count" {
+  description = "Maximum number of concurrent instances Flex Consumption can scale to"
+  type        = number
+  default     = 40
 }
 
 variable "extra_app_settings" {

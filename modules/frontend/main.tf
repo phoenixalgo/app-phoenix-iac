@@ -73,14 +73,13 @@ resource "azurerm_linux_web_app" "frontend" {
     "NODE_ENV"                            = "production"
 
     # Backend API URLs (private DNS — resolved via VNet integration)
-    # Function keys must be added manually after deployment:
-    #   az functionapp keys list --name <func-name> --resource-group <rg>
+    # Function keys are stored in Key Vault — populate the KV secrets manually after deploy
     "API_BASE_URL"                  = var.api_base_url
-    "API_FUNCTION_KEY"              = "REPLACE_AFTER_DEPLOY"
+    "API_FUNCTION_KEY"              = "@Microsoft.KeyVault(SecretUri=${var.key_vault_uri}secrets/alpacadm-function-key)"
     "MARKETREGIME_API_BASE_URL"     = var.marketregime_api_base_url
-    "MARKETREGIME_API_FUNCTION_KEY" = "REPLACE_AFTER_DEPLOY"
+    "MARKETREGIME_API_FUNCTION_KEY" = "@Microsoft.KeyVault(SecretUri=${var.key_vault_uri}secrets/portfoliomgr-function-key)"
     "ANGELONE_API_BASE_URL"         = var.angelone_api_base_url
-    "ANGELONE_FUNCTION_KEY"         = "REPLACE_AFTER_DEPLOY"
+    "ANGELONE_FUNCTION_KEY"         = "@Microsoft.KeyVault(SecretUri=${var.key_vault_uri}secrets/angelonemgr-function-key)"
 
     # Service Bus — resolved from Key Vault
     "AZURE_SERVICE_BUS_CONNECTION_STRING"      = "@Microsoft.KeyVault(SecretUri=${var.key_vault_uri}secrets/hyblock-servicebus-connection-string)"
@@ -95,14 +94,6 @@ resource "azurerm_linux_web_app" "frontend" {
     "AUTH0_CLIENT_ID"       = var.auth0_client_id
     "AUTH0_CLIENT_SECRET"   = "@Microsoft.KeyVault(SecretUri=${var.key_vault_uri}secrets/auth0-client-secret)"
     "AUTH0_SECRET"          = "@Microsoft.KeyVault(SecretUri=${var.key_vault_uri}secrets/auth0-secret)"
-  }
-
-  lifecycle {
-    ignore_changes = [
-      app_settings["API_FUNCTION_KEY"],
-      app_settings["MARKETREGIME_API_FUNCTION_KEY"],
-      app_settings["ANGELONE_FUNCTION_KEY"],
-    ]
   }
 
   depends_on = [

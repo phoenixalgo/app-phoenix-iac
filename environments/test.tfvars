@@ -3,9 +3,9 @@ environment     = "test"
 location        = "australiaeast"
 project         = "phoenix"
 
-function_app_plan_sku = "P1v2"
+function_app_plan_sku = "FC1"
 frontend_app_plan_sku = "B1"
 
-# Auth0 — fill in after creating the Auth0 test application
-# auth0_domain    = "yourapp.au.auth0.com"
-# auth0_client_id = ""
+# Auth0 (non-secret values — secrets live in Key Vault, populated manually)
+auth0_domain    = "dev-1hmmvopl55l2lnoc.us.auth0.com"
+auth0_client_id = "m5zBIIcHqbujxXQhBfwXE9SzEbGG7hWU"

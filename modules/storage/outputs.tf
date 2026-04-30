@@ -6,10 +6,9 @@ output "func_runtime_account_id" {
   value = azurerm_storage_account.func_runtime.id
 }
 
-output "data_connection_string" {
-  description = "Data storage connection string — only used for Key Vault seeding"
-  value       = azurerm_storage_account.data.primary_connection_string
-  sensitive   = true
+output "func_runtime_blob_endpoint" {
+  description = "Primary blob endpoint of the function runtime storage account (used by Flex Consumption deployment)"
+  value       = azurerm_storage_account.func_runtime.primary_blob_endpoint
 }
 
 output "data_account_name" {

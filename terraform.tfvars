@@ -8,5 +8,5 @@ environment     = "test"
 location        = "australiaeast"
 project         = "phoenix"
 
-function_app_plan_sku = "P1v2"
+function_app_plan_sku = "FC1"
 frontend_app_plan_sku = "B1"
