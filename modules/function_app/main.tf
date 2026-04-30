@@ -64,12 +64,24 @@ resource "azurerm_function_app_flex_consumption" "this" {
   }
 
   # Flex Consumption manages FUNCTIONS_WORKER_RUNTIME, FUNCTIONS_EXTENSION_VERSION,
-  # AzureWebJobsStorage, and SCM_DO_BUILD_DURING_DEPLOYMENT itself — they cannot
-  # appear in app_settings or the create call returns 400.
+  # and SCM_DO_BUILD_DURING_DEPLOYMENT itself — they cannot appear in app_settings
+  # or the create call returns 400.
+  #
+  # AzureWebJobsStorage is configured explicitly in keyless (managed identity)
+  # form using the service-URI variant Microsoft recommends for FC1. The plain
+  # "AzureWebJobsStorage" connection-string form must NOT be set — if anything
+  # injects it with an empty AccountKey, the host fails 403 AuthenticationFailed.
   app_settings = merge(
     {
-      "KEY_VAULT_URL" = var.key_vault_uri
+      "KEY_VAULT_URL"                        = var.key_vault_uri
+      "AzureWebJobsStorage__blobServiceUri"  = trimsuffix(var.deployment_storage_blob_endpoint, "/")
+      "AzureWebJobsStorage__queueServiceUri" = "https://${var.deployment_storage_account_name}.queue.core.windows.net"
+      "AzureWebJobsStorage__tableServiceUri" = "https://${var.deployment_storage_account_name}.table.core.windows.net"
+      "AzureWebJobsStorage__credential"      = "managedidentity"
     },
+    var.application_insights_connection_string != "" ? {
+      "APPLICATIONINSIGHTS_CONNECTION_STRING" = var.application_insights_connection_string
+    } : {},
     var.extra_app_settings,
   )
 }

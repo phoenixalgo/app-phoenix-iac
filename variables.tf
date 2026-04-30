@@ -49,6 +49,15 @@ variable "frontend_app_plan_sku" {
 }
 
 ###############################################################################
+# Observability
+###############################################################################
+variable "enable_application_insights" {
+  description = "Toggle Application Insights + Log Analytics Workspace. When false the resources are removed and the AI connection string is not set on any function app."
+  type        = bool
+  default     = true
+}
+
+###############################################################################
 # Auth0 (set via tfvars or env — never commit secrets)
 ###############################################################################
 variable "auth0_domain" {

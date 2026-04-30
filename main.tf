@@ -76,6 +76,21 @@ module "acr" {
 }
 
 ###############################################################################
+# Phase 2E — Monitoring (Log Analytics Workspace + Application Insights)
+# Toggle with var.enable_application_insights. When false the resources are
+# not created and no AI connection string is wired into the function apps.
+###############################################################################
+module "monitoring" {
+  source = "./modules/monitoring"
+
+  enabled             = var.enable_application_insights
+  resource_group_name = azurerm_resource_group.main.name
+  location            = var.location
+  environment         = var.environment
+  project             = var.project
+}
+
+###############################################################################
 # Phase 3 — Function Apps (Flex Consumption)
 # Each function app gets its own FC1 plan (Flex Consumption is 1 plan : 1 app).
 # The plan is created inside the function_app module — see modules/function_app.
@@ -89,12 +104,13 @@ module "acr" {
 module "func_alpacadatamanager" {
   source = "./modules/function_app"
 
-  resource_group_name          = azurerm_resource_group.main.name
-  location                     = var.location
-  environment                  = var.environment
-  function_app_name            = "alpacadm"
+  resource_group_name              = azurerm_resource_group.main.name
+  location                         = var.location
+  environment                      = var.environment
+  function_app_name                = "alpacadm"
   app_service_plan_sku             = var.function_app_plan_sku
   deployment_storage_account_id    = module.storage.func_runtime_account_id
+  deployment_storage_account_name  = module.storage.func_runtime_account_name
   deployment_storage_blob_endpoint = module.storage.func_runtime_blob_endpoint
   data_storage_account_id          = module.storage.data_account_id
   subnet_functions_id              = module.networking.subnet_functions_id
@@ -102,6 +118,8 @@ module "func_alpacadatamanager" {
   private_dns_zone_websites_id     = module.networking.private_dns_zone_ids["websites"]
   key_vault_id                     = module.keyvault.vault_id
   key_vault_uri                    = module.keyvault.vault_uri
+
+  application_insights_connection_string = module.monitoring.connection_string
 
   extra_app_settings = {
     "AZURE_SERVICEBUS_CONNECTION_STRING" = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/hyblock-servicebus-connection-string)"
@@ -121,12 +139,13 @@ module "func_alpacadatamanager" {
 module "func_portfoliomanager" {
   source = "./modules/function_app"
 
-  resource_group_name          = azurerm_resource_group.main.name
-  location                     = var.location
-  environment                  = var.environment
-  function_app_name            = "portfoliomgr"
+  resource_group_name              = azurerm_resource_group.main.name
+  location                         = var.location
+  environment                      = var.environment
+  function_app_name                = "portfoliomgr"
   app_service_plan_sku             = var.function_app_plan_sku
   deployment_storage_account_id    = module.storage.func_runtime_account_id
+  deployment_storage_account_name  = module.storage.func_runtime_account_name
   deployment_storage_blob_endpoint = module.storage.func_runtime_blob_endpoint
   data_storage_account_id          = module.storage.data_account_id
   subnet_functions_id              = module.networking.subnet_functions_id
@@ -134,6 +153,8 @@ module "func_portfoliomanager" {
   private_dns_zone_websites_id     = module.networking.private_dns_zone_ids["websites"]
   key_vault_id                     = module.keyvault.vault_id
   key_vault_uri                    = module.keyvault.vault_uri
+
+  application_insights_connection_string = module.monitoring.connection_string
 
   extra_app_settings = {
     "AZURE_SERVICEBUS_CONNECTION_STRING" = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/hyblock-servicebus-connection-string)"
@@ -151,12 +172,13 @@ module "func_portfoliomanager" {
 module "func_okxmanager" {
   source = "./modules/function_app"
 
-  resource_group_name          = azurerm_resource_group.main.name
-  location                     = var.location
-  environment                  = var.environment
-  function_app_name            = "okxmgr"
+  resource_group_name              = azurerm_resource_group.main.name
+  location                         = var.location
+  environment                      = var.environment
+  function_app_name                = "okxmgr"
   app_service_plan_sku             = var.function_app_plan_sku
   deployment_storage_account_id    = module.storage.func_runtime_account_id
+  deployment_storage_account_name  = module.storage.func_runtime_account_name
   deployment_storage_blob_endpoint = module.storage.func_runtime_blob_endpoint
   data_storage_account_id          = module.storage.data_account_id
   subnet_functions_id              = module.networking.subnet_functions_id
@@ -164,6 +186,8 @@ module "func_okxmanager" {
   private_dns_zone_websites_id     = module.networking.private_dns_zone_ids["websites"]
   key_vault_id                     = module.keyvault.vault_id
   key_vault_uri                    = module.keyvault.vault_uri
+
+  application_insights_connection_string = module.monitoring.connection_string
 
   extra_app_settings = {
     "AZURE_SERVICEBUS_CONNECTION_STRING" = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/hyblock-servicebus-connection-string)"
@@ -187,12 +211,13 @@ module "func_okxmanager" {
 module "func_hyperliquidmanager" {
   source = "./modules/function_app"
 
-  resource_group_name          = azurerm_resource_group.main.name
-  location                     = var.location
-  environment                  = var.environment
-  function_app_name            = "hlmgr"
+  resource_group_name              = azurerm_resource_group.main.name
+  location                         = var.location
+  environment                      = var.environment
+  function_app_name                = "hlmgr"
   app_service_plan_sku             = var.function_app_plan_sku
   deployment_storage_account_id    = module.storage.func_runtime_account_id
+  deployment_storage_account_name  = module.storage.func_runtime_account_name
   deployment_storage_blob_endpoint = module.storage.func_runtime_blob_endpoint
   data_storage_account_id          = module.storage.data_account_id
   subnet_functions_id              = module.networking.subnet_functions_id
@@ -200,6 +225,8 @@ module "func_hyperliquidmanager" {
   private_dns_zone_websites_id     = module.networking.private_dns_zone_ids["websites"]
   key_vault_id                     = module.keyvault.vault_id
   key_vault_uri                    = module.keyvault.vault_uri
+
+  application_insights_connection_string = module.monitoring.connection_string
 
   extra_app_settings = {
     "AZURE_SERVICEBUS_CONNECTION_STRING" = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/hyblock-servicebus-connection-string)"
@@ -216,12 +243,13 @@ module "func_hyperliquidmanager" {
 module "func_angelonemanager" {
   source = "./modules/function_app"
 
-  resource_group_name          = azurerm_resource_group.main.name
-  location                     = var.location
-  environment                  = var.environment
-  function_app_name            = "angelonemgr"
+  resource_group_name              = azurerm_resource_group.main.name
+  location                         = var.location
+  environment                      = var.environment
+  function_app_name                = "angelonemgr"
   app_service_plan_sku             = var.function_app_plan_sku
   deployment_storage_account_id    = module.storage.func_runtime_account_id
+  deployment_storage_account_name  = module.storage.func_runtime_account_name
   deployment_storage_blob_endpoint = module.storage.func_runtime_blob_endpoint
   data_storage_account_id          = module.storage.data_account_id
   subnet_functions_id              = module.networking.subnet_functions_id
@@ -230,18 +258,20 @@ module "func_angelonemanager" {
   key_vault_id                     = module.keyvault.vault_id
   key_vault_uri                    = module.keyvault.vault_uri
 
+  application_insights_connection_string = module.monitoring.connection_string
+
   extra_app_settings = {
-    "AZURE_SERVICEBUS_CONNECTION_STRING"    = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/hyblock-servicebus-connection-string)"
-    "ANGELONE_STATE_STORAGE_CONNECTION"     = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/angelone-state-storage-connection-string)"
-    "ANGELONE_API_KEY"                      = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/ANGELONE-API-KEY)"
-    "ANGELONE_CLIENT_CODE"                  = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/ANGELONE-CLIENT-CODE)"
-    "ANGELONE_MPIN"                         = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/ANGELONE-MPIN)"
-    "ANGELONE_TOTP_SECRET"                  = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/ANGELONE-TOTP-SECRET)"
-    "ANGELONE_MANUAL_QUEUE_NAME"            = "angelone_tradesignal_account1"
-    "ANGELONE_AUTOINTENTS_QUEUE_NAME"       = "angelone_tradesignal_autointents1"
-    "ANGELONE_RESULTS_QUEUE_NAME"           = "angelone_execution_results"
-    "ANGELONE_DRY_RUN"                      = "true" # Safety: dry run in test
-    "ANGELONE_STATE_TABLE_NAME"             = "AngelOneExecutionState"
+    "AZURE_SERVICEBUS_CONNECTION_STRING" = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/hyblock-servicebus-connection-string)"
+    "ANGELONE_STATE_STORAGE_CONNECTION"  = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/angelone-state-storage-connection-string)"
+    "ANGELONE_API_KEY"                   = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/ANGELONE-API-KEY)"
+    "ANGELONE_CLIENT_CODE"               = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/ANGELONE-CLIENT-CODE)"
+    "ANGELONE_MPIN"                      = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/ANGELONE-MPIN)"
+    "ANGELONE_TOTP_SECRET"               = "@Microsoft.KeyVault(SecretUri=${module.keyvault.vault_uri}secrets/ANGELONE-TOTP-SECRET)"
+    "ANGELONE_MANUAL_QUEUE_NAME"         = "angelone_tradesignal_account1"
+    "ANGELONE_AUTOINTENTS_QUEUE_NAME"    = "angelone_tradesignal_autointents1"
+    "ANGELONE_RESULTS_QUEUE_NAME"        = "angelone_execution_results"
+    "ANGELONE_DRY_RUN"                   = "true" # Safety: dry run in test
+    "ANGELONE_STATE_TABLE_NAME"          = "AngelOneExecutionState"
   }
 }
 

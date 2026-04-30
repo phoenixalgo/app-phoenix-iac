@@ -18,6 +18,11 @@ variable "deployment_storage_account_id" {
   type        = string
 }
 
+variable "deployment_storage_account_name" {
+  description = "Name of the deployment storage account — used to wire AzureWebJobsStorage to the same account via managed identity"
+  type        = string
+}
+
 variable "deployment_storage_blob_endpoint" {
   description = "Primary blob endpoint URL of the deployment storage account (e.g. https://<acct>.blob.core.windows.net/)"
   type        = string
@@ -75,4 +80,11 @@ variable "extra_app_settings" {
   description = "Additional app settings specific to this function app"
   type        = map(string)
   default     = {}
+}
+
+variable "application_insights_connection_string" {
+  description = "Application Insights connection string. Leave empty to disable AI integration on this app."
+  type        = string
+  default     = ""
+  sensitive   = true
 }

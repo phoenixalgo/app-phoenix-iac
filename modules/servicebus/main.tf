@@ -28,33 +28,33 @@ resource "azurerm_servicebus_namespace_authorization_rule" "app_policy" {
 locals {
   # Queues WITHOUT sessions
   standard_queues = [
-    "alpaca_trades_fe",              # AlpacaDataManager: router from frontend
-    "alpaca_breakout_fills",         # AlpacaDataManager: breakout processor
-    "hookdeck_tview-queue",          # AlpacaDataManager: TradingView webhook relay
-    "okx_trades_fe",                 # OkxManager: router from frontend
-    "okx_long_trades_scheduler",     # OkxManager: scheduled trade processor
-    "manual_trades_fe",              # PortfolioManager: router from frontend
-    "angelone_execution_results",    # AngelOneManager: publishes results
+    "alpaca_trades_fe",           # AlpacaDataManager: router from frontend
+    "alpaca_breakout_fills",      # AlpacaDataManager: breakout processor
+    "hookdeck_tview-queue",       # AlpacaDataManager: TradingView webhook relay
+    "okx_trades_fe",              # OkxManager: router from frontend
+    "okx_long_trades_scheduler",  # OkxManager: scheduled trade processor
+    "manual_trades_fe",           # PortfolioManager: router from frontend
+    "angelone_execution_results", # AngelOneManager: publishes results
   ]
 
   # Queues WITH sessions (ordered message processing per symbol)
   session_queues = [
-    "alpaca_tradesignal_account1",       # AlpacaDataManager: executor
-    "alpaca_tradesignal_autointents1",   # AlpacaDataManager: auto-intents
-    "okx_tradesignal_account1",          # OkxManager: executor account 1
-    "okx_tradesignal_account2",          # OkxManager: executor account 2
-    "okx_tradesignal_autointents1",      # OkxManager: auto-intents
-    "tradesignalqueue_account1",         # HyperLiquidManager: executor account 1
-    "tradesignalqueue_account2",         # HyperLiquidManager: executor account 2
-    "tradesignalqueue_account3",         # HyperLiquidManager: executor account 3
-    "tradesignalqueue_account4",         # HyperLiquidManager: executor account 4
-    "tradesignalqueue_account5",         # HyperLiquidManager: executor account 5
+    "alpaca_tradesignal_account1",        # AlpacaDataManager: executor
+    "alpaca_tradesignal_autointents1",    # AlpacaDataManager: auto-intents
+    "okx_tradesignal_account1",           # OkxManager: executor account 1
+    "okx_tradesignal_account2",           # OkxManager: executor account 2
+    "okx_tradesignal_autointents1",       # OkxManager: auto-intents
+    "tradesignalqueue_account1",          # HyperLiquidManager: executor account 1
+    "tradesignalqueue_account2",          # HyperLiquidManager: executor account 2
+    "tradesignalqueue_account3",          # HyperLiquidManager: executor account 3
+    "tradesignalqueue_account4",          # HyperLiquidManager: executor account 4
+    "tradesignalqueue_account5",          # HyperLiquidManager: executor account 5
     "tradesignalqueue_remaining_symbols", # HyperLiquidManager: remaining symbols
-    "hl_tradesignal_autointents1",       # HyperLiquidManager: auto-intents
-    "angelone_tradesignal_account1",     # AngelOneManager: manual trades
-    "angelone_tradesignal_autointents1", # AngelOneManager: auto-intents
-    "ibkr_tradesignal_account1",         # IBKRManager: manual trades
-    "ibkr_tradesignal_autointents1",     # IBKRManager: auto-intents
+    "hl_tradesignal_autointents1",        # HyperLiquidManager: auto-intents
+    "angelone_tradesignal_account1",      # AngelOneManager: manual trades
+    "angelone_tradesignal_autointents1",  # AngelOneManager: auto-intents
+    "ibkr_tradesignal_account1",          # IBKRManager: manual trades
+    "ibkr_tradesignal_autointents1",      # IBKRManager: auto-intents
   ]
 }
 
@@ -63,9 +63,9 @@ resource "azurerm_servicebus_queue" "standard" {
   name         = each.value
   namespace_id = azurerm_servicebus_namespace.main.id
 
-  max_delivery_count          = 10
-  lock_duration               = "PT1M"
-  default_message_ttl         = "P14D"
+  max_delivery_count                   = 10
+  lock_duration                        = "PT1M"
+  default_message_ttl                  = "P14D"
   dead_lettering_on_message_expiration = true
 }
 
@@ -74,10 +74,10 @@ resource "azurerm_servicebus_queue" "session" {
   name         = each.value
   namespace_id = azurerm_servicebus_namespace.main.id
 
-  requires_session            = true
-  max_delivery_count          = 10
-  lock_duration               = "PT5M"
-  default_message_ttl         = "P14D"
+  requires_session                     = true
+  max_delivery_count                   = 10
+  lock_duration                        = "PT5M"
+  default_message_ttl                  = "P14D"
   dead_lettering_on_message_expiration = true
 }
 
