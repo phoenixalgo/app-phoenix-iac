@@ -17,6 +17,16 @@ resource "azurerm_subnet" "frontend" {
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [cidrsubnet(var.vnet_address_space, 8, 1)] # 10.0.1.0/24
 
+  # Service endpoints are only attached when private endpoints are off. They
+  # enable Microsoft.Web access restrictions on the function apps and route
+  # storage/KV/SB traffic over the Microsoft backbone without paying per-PE.
+  service_endpoints = var.use_private_endpoints ? [] : [
+    "Microsoft.Web",
+    "Microsoft.Storage",
+    "Microsoft.KeyVault",
+    "Microsoft.ServiceBus",
+  ]
+
   delegation {
     name = "webapp-delegation"
     service_delegation {
@@ -31,6 +41,12 @@ resource "azurerm_subnet" "functions" {
   resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.main.name
   address_prefixes     = [cidrsubnet(var.vnet_address_space, 8, 2)] # 10.0.2.0/24
+
+  service_endpoints = var.use_private_endpoints ? [] : [
+    "Microsoft.Storage",
+    "Microsoft.KeyVault",
+    "Microsoft.ServiceBus",
+  ]
 
   # Flex Consumption requires Microsoft.App/environments delegation (it runs on
   # the Azure Container Apps fleet, not the classic App Service workers).

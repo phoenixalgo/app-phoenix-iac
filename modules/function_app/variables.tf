@@ -39,8 +39,19 @@ variable "subnet_functions_id" {
 }
 
 variable "subnet_pe_id" {
-  description = "Subnet ID for private endpoints (inbound)"
+  description = "Subnet ID for private endpoints (inbound). Unused when use_private_endpoints = false."
   type        = string
+}
+
+variable "subnet_frontend_id" {
+  description = "Frontend subnet ID — used as the sole allowed source in ip_restriction when use_private_endpoints = false."
+  type        = string
+}
+
+variable "use_private_endpoints" {
+  description = "When false, skip the per-app PE and gate inbound traffic with an ip_restriction allowing only the frontend subnet."
+  type        = bool
+  default     = true
 }
 
 variable "private_dns_zone_websites_id" {

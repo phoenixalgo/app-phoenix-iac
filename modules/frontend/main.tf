@@ -63,6 +63,21 @@ resource "azurerm_linux_web_app" "frontend" {
       docker_registry_url = "https://${var.acr_login_server}"
       docker_image_name   = "manualtrades-fe:latest"
     }
+
+    # When home_ip_cidr is set, lock the public hostname down to that single
+    # source. Auth0 is then a second gate behind a network allow-list. Empty
+    # CIDR keeps the FE open and the default action stays Allow.
+    ip_restriction_default_action = var.home_ip_cidr != "" ? "Deny" : "Allow"
+
+    dynamic "ip_restriction" {
+      for_each = var.home_ip_cidr != "" ? [1] : []
+      content {
+        name       = "AllowHomeIp"
+        priority   = 100
+        action     = "Allow"
+        ip_address = var.home_ip_cidr
+      }
+    }
   }
 
   app_settings = {

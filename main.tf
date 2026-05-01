@@ -13,11 +13,12 @@ resource "azurerm_resource_group" "main" {
 module "networking" {
   source = "./modules/networking"
 
-  resource_group_name = azurerm_resource_group.main.name
-  location            = var.location
-  environment         = var.environment
-  project             = var.project
-  vnet_address_space  = var.vnet_address_space
+  resource_group_name   = azurerm_resource_group.main.name
+  location              = var.location
+  environment           = var.environment
+  project               = var.project
+  vnet_address_space    = var.vnet_address_space
+  use_private_endpoints = var.use_private_endpoints
 }
 
 ###############################################################################
@@ -31,8 +32,12 @@ module "storage" {
   environment               = var.environment
   project                   = var.project
   subnet_pe_id              = module.networking.subnet_private_endpoints_id
+  subnet_frontend_id        = module.networking.subnet_frontend_id
+  subnet_functions_id       = module.networking.subnet_functions_id
   private_dns_zone_blob_id  = module.networking.private_dns_zone_ids["blob"]
   private_dns_zone_table_id = module.networking.private_dns_zone_ids["table"]
+  use_private_endpoints     = var.use_private_endpoints
+  external_table_writers    = var.external_table_writers
 }
 
 ###############################################################################
@@ -60,7 +65,10 @@ module "keyvault" {
   environment               = var.environment
   project                   = var.project
   subnet_pe_id              = module.networking.subnet_private_endpoints_id
+  subnet_frontend_id        = module.networking.subnet_frontend_id
+  subnet_functions_id       = module.networking.subnet_functions_id
   private_dns_zone_vault_id = module.networking.private_dns_zone_ids["vault"]
+  use_private_endpoints     = var.use_private_endpoints
 }
 
 ###############################################################################
@@ -116,6 +124,8 @@ module "func_alpacadatamanager" {
   subnet_functions_id              = module.networking.subnet_functions_id
   subnet_pe_id                     = module.networking.subnet_private_endpoints_id
   private_dns_zone_websites_id     = module.networking.private_dns_zone_ids["websites"]
+  subnet_frontend_id               = module.networking.subnet_frontend_id
+  use_private_endpoints            = var.use_private_endpoints
   key_vault_id                     = module.keyvault.vault_id
   key_vault_uri                    = module.keyvault.vault_uri
 
@@ -151,6 +161,8 @@ module "func_portfoliomanager" {
   subnet_functions_id              = module.networking.subnet_functions_id
   subnet_pe_id                     = module.networking.subnet_private_endpoints_id
   private_dns_zone_websites_id     = module.networking.private_dns_zone_ids["websites"]
+  subnet_frontend_id               = module.networking.subnet_frontend_id
+  use_private_endpoints            = var.use_private_endpoints
   key_vault_id                     = module.keyvault.vault_id
   key_vault_uri                    = module.keyvault.vault_uri
 
@@ -184,6 +196,8 @@ module "func_okxmanager" {
   subnet_functions_id              = module.networking.subnet_functions_id
   subnet_pe_id                     = module.networking.subnet_private_endpoints_id
   private_dns_zone_websites_id     = module.networking.private_dns_zone_ids["websites"]
+  subnet_frontend_id               = module.networking.subnet_frontend_id
+  use_private_endpoints            = var.use_private_endpoints
   key_vault_id                     = module.keyvault.vault_id
   key_vault_uri                    = module.keyvault.vault_uri
 
@@ -223,6 +237,8 @@ module "func_hyperliquidmanager" {
   subnet_functions_id              = module.networking.subnet_functions_id
   subnet_pe_id                     = module.networking.subnet_private_endpoints_id
   private_dns_zone_websites_id     = module.networking.private_dns_zone_ids["websites"]
+  subnet_frontend_id               = module.networking.subnet_frontend_id
+  use_private_endpoints            = var.use_private_endpoints
   key_vault_id                     = module.keyvault.vault_id
   key_vault_uri                    = module.keyvault.vault_uri
 
@@ -255,6 +271,8 @@ module "func_angelonemanager" {
   subnet_functions_id              = module.networking.subnet_functions_id
   subnet_pe_id                     = module.networking.subnet_private_endpoints_id
   private_dns_zone_websites_id     = module.networking.private_dns_zone_ids["websites"]
+  subnet_frontend_id               = module.networking.subnet_frontend_id
+  use_private_endpoints            = var.use_private_endpoints
   key_vault_id                     = module.keyvault.vault_id
   key_vault_uri                    = module.keyvault.vault_uri
 
@@ -305,4 +323,7 @@ module "frontend" {
   # Auth0 (non-secret values — secrets are in Key Vault)
   auth0_domain    = var.auth0_domain
   auth0_client_id = var.auth0_client_id
+
+  # Optional network gate in front of Auth0
+  home_ip_cidr = var.home_ip_cidr
 }

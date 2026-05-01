@@ -24,3 +24,9 @@ variable "key_vault_uri" { type = string }
 # Auth0 (non-secret values passed directly)
 variable "auth0_domain" { type = string }
 variable "auth0_client_id" { type = string }
+
+variable "home_ip_cidr" {
+  description = "Optional CIDR allowed to reach the frontend public hostname. When set, every other source is denied. Empty leaves the FE open to the internet (Auth0 is then the only gate)."
+  type        = string
+  default     = ""
+}

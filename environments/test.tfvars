@@ -9,6 +9,11 @@ frontend_app_plan_sku = "B1"
 # Observability — flip to false to remove App Insights + LAW entirely
 enable_application_insights = false
 
+# Network isolation — flip to false to drop the 8 private endpoints (~$58/mo)
+# and switch to service endpoints + access restrictions (same VNet routing,
+# functions still gated to the frontend subnet only).
+use_private_endpoints = false
+
 # Auth0 (non-secret values — secrets live in Key Vault, populated manually)
 auth0_domain    = "dev-1hmmvopl55l2lnoc.us.auth0.com"
 auth0_client_id = "m5zBIIcHqbujxXQhBfwXE9SzEbGG7hWU"

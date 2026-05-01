@@ -15,6 +15,18 @@ resource "azurerm_key_vault" "main" {
   purge_protection_enabled      = false
   public_network_access_enabled = true # Required for the deployer to manage secrets from outside the VNet
   rbac_authorization_enabled    = true
+
+  # Service-endpoint mode: bind the frontend + functions subnets so VNet
+  # traffic routes over the Microsoft backbone. default_action stays Allow
+  # so the deployer (and bypass=AzureServices consumers) keep working.
+  dynamic "network_acls" {
+    for_each = var.use_private_endpoints ? [] : [1]
+    content {
+      default_action             = "Allow"
+      bypass                     = "AzureServices"
+      virtual_network_subnet_ids = [var.subnet_frontend_id, var.subnet_functions_id]
+    }
+  }
 }
 
 ###############################################################################
@@ -81,9 +93,10 @@ removed {
 }
 
 ###############################################################################
-# Private Endpoint
+# Private Endpoint — skipped when use_private_endpoints = false
 ###############################################################################
 resource "azurerm_private_endpoint" "keyvault" {
+  count               = var.use_private_endpoints ? 1 : 0
   name                = "pe-${var.project}-kv-${var.environment}"
   location            = var.location
   resource_group_name = var.resource_group_name

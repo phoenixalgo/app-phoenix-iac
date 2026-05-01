@@ -52,7 +52,7 @@ resource "azurerm_function_app_flex_consumption" "this" {
   maximum_instance_count = var.maximum_instance_count
 
   virtual_network_subnet_id     = var.subnet_functions_id
-  public_network_access_enabled = false
+  public_network_access_enabled = !var.use_private_endpoints
   https_only                    = true
 
   identity {
@@ -61,6 +61,24 @@ resource "azurerm_function_app_flex_consumption" "this" {
 
   site_config {
     minimum_tls_version = "1.2"
+
+    # Default to Deny in both modes. In PE mode private-endpoint traffic
+    # bypasses ip_restrictions natively so the function still works; the Deny
+    # is belt-and-suspenders if public access ever flips on. In SE mode it
+    # correctly rejects anything outside the rules below.
+    ip_restriction_default_action = "Deny"
+
+    # Allow the frontend subnet via Microsoft.Web service endpoint (only
+    # meaningful in SE mode — PE mode has no public traffic to filter).
+    dynamic "ip_restriction" {
+      for_each = var.use_private_endpoints ? [] : [1]
+      content {
+        name                      = "AllowFrontendSubnet"
+        priority                  = 100
+        action                    = "Allow"
+        virtual_network_subnet_id = var.subnet_frontend_id
+      }
+    }
   }
 
   # Flex Consumption manages FUNCTIONS_WORKER_RUNTIME, FUNCTIONS_EXTENSION_VERSION,
@@ -140,8 +158,11 @@ resource "azurerm_role_assignment" "data_table_contributor" {
 
 ###############################################################################
 # Private Endpoint (inbound — VNet-only access)
+# Skipped when use_private_endpoints = false; in that mode inbound is gated
+# by the ip_restriction in site_config above instead.
 ###############################################################################
 resource "azurerm_private_endpoint" "function" {
+  count               = var.use_private_endpoints ? 1 : 0
   name                = "pe-${local.full_name}"
   location            = var.location
   resource_group_name = var.resource_group_name

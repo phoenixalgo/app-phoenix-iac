@@ -30,6 +30,19 @@ resource "azurerm_storage_account" "data" {
   min_tls_version                 = "TLS1_2"
   public_network_access_enabled   = true # Required for Terraform to create tables/containers from outside VNet
   allow_nested_items_to_be_public = false
+
+  # Service-endpoint mode (use_private_endpoints = false): formally bind the
+  # frontend + functions subnets so VNet traffic to this account routes via SE
+  # on the Microsoft backbone. default_action stays Allow so Terraform / the
+  # deployer can still manage tables and containers from outside the VNet.
+  dynamic "network_rules" {
+    for_each = var.use_private_endpoints ? [] : [1]
+    content {
+      default_action             = "Allow"
+      bypass                     = ["AzureServices"]
+      virtual_network_subnet_ids = [var.subnet_frontend_id, var.subnet_functions_id]
+    }
+  }
 }
 
 ###############################################################################
@@ -96,9 +109,23 @@ resource "azurerm_storage_table" "market_regime_score" {
 }
 
 ###############################################################################
-# Private Endpoints — Data storage (blob + table)
+# RBAC — additional users / SPNs that need to write to the data tables.
+# Used by utility scripts running locally with az login (see e.g.
+# C:\Users\rohit\python\dev\utilityscripts\market_regime.py).
+###############################################################################
+resource "azurerm_role_assignment" "external_table_writer" {
+  for_each             = toset(var.external_table_writers)
+  scope                = azurerm_storage_account.data.id
+  role_definition_name = "Storage Table Data Contributor"
+  principal_id         = each.value
+}
+
+###############################################################################
+# Private Endpoints — Data storage (blob + table). Skipped when
+# use_private_endpoints = false (saves ~$15/month for the two PEs).
 ###############################################################################
 resource "azurerm_private_endpoint" "data_blob" {
+  count               = var.use_private_endpoints ? 1 : 0
   name                = "pe-${var.project}-data-blob-${var.environment}"
   location            = var.location
   resource_group_name = var.resource_group_name
@@ -118,6 +145,7 @@ resource "azurerm_private_endpoint" "data_blob" {
 }
 
 resource "azurerm_private_endpoint" "data_table" {
+  count               = var.use_private_endpoints ? 1 : 0
   name                = "pe-${var.project}-data-table-${var.environment}"
   location            = var.location
   resource_group_name = var.resource_group_name
