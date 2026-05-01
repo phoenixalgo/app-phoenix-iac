@@ -294,6 +294,21 @@ module "func_angelonemanager" {
 }
 
 ###############################################################################
+# Phase 3F — Hookdeck → Service Bus relay (Logic App, Consumption tier)
+# Public HTTP trigger gated by SAS-signed callback URL (only Hookdeck has it).
+# Forwards the body onto the hookdeck_tview-queue queue.
+###############################################################################
+module "logic_app_hookdeck" {
+  source = "./modules/logic_app_hookdeck"
+
+  resource_group_name           = azurerm_resource_group.main.name
+  location                      = var.location
+  environment                   = var.environment
+  project                       = var.project
+  service_bus_connection_string = module.servicebus.connection_string
+}
+
+###############################################################################
 # Phase 4 — Frontend App Service (Next.js Docker container)
 # Source: C:\Users\rohit\nextjs\manualtrades-fe
 ###############################################################################
